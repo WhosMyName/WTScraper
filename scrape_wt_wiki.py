@@ -1,6 +1,7 @@
 # scrape_wt_wiki
 
 # import DB
+from tabnanny import verbose
 from typing import Dict, List
 import requests
 from bs4 import BeautifulSoup, SoupStrainer, Tag
@@ -47,6 +48,8 @@ def get_vehicles_by_nation(nation_url: str) -> Dict[str, str]:
 def get_vehicle_specs(vehicle_url: str):
     content = requests.get(vehicle_url).text
     soup = BeautifulSoup(content, "html.parser", parse_only=SoupStrainer(class_="mw-normal-catlinks"))
+    with open(f"{vehicle_url.split('/')[len(vehicle_url.split('/')) - 1]}.html", "w", encoding="utf-8") as vec:
+        vec.write(content)
     if "ground" in soup.ul.li.string.lower():
         print("Earth")
     elif "aviation" in soup.ul.li.string.lower():
@@ -62,8 +65,8 @@ def __main__():
     #get_vehicles_by_nation(get_fleet_nations().pop("USA"))
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
     get_vehicle_specs("https://wiki.warthunder.com/Magach_3_(USA)")
-    get_vehicle_specs("https://wiki.warthunder.com/F-84B-26")
-    get_vehicle_specs("https://wiki.warthunder.com/Kim_Qui")
+    #get_vehicle_specs("https://wiki.warthunder.com/F-84B-26")
+    #get_vehicle_specs("https://wiki.warthunder.com/Kim_Qui")
 
 if __name__ == "__main__":
     __main__()
