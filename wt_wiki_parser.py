@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup, SoupStrainer, Tag
+from ammunition import Ammunition
 from armament import Armament
 from tanks import Tank
+from typing import List
 
 
 def parser_XYZ_vehicle(response_content: str, html_tag: str):
@@ -17,11 +19,33 @@ def parser_ground_vehicle(response_content: str, html_tag: str) -> Tank:
             armaments.append(spec)
     specs = [spec for spec in specs if len(spec["class"]) == 1 ]
     parsed_tank = Tank("Tank1")
-    for armament in armaments:
-        parsed_tank.armaments.append(parse_ground_armaments(armament))
+    #for armament in armaments:
+    #    parsed_tank.armaments.append(parse_ground_armaments(armament))
+
+    tables = soup.find_all(class_="wikitable sortable")
+    ammunitions: List[Ammunition]
+    for table in tables:
+        if table.find("tr").find("th").text == "Penetration statistics":
+            ammunitions = parse_ground_ammunitions_pen(table)
+        elif table.find("tr").find("th").text == "Shell details" and len(ammunitions):
+            parse_ground_ammunitions_stats(ammo_specs=table, ammunitions=ammunitions)
+        else:
+            pass
 
 
+def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition]):
+    pass
 
+
+def parse_ground_ammunitions_pen(ammo_pen_specs: Tag) -> List[Ammunition]:
+    ammunitions = ammo_pen_specs.find_all("tr")[3:]
+    parsed_ammo: List[Ammunition] = []
+    for ammo in ammunitions:
+        round_name = ammo.find_all("td")[0].text
+        round_type = ammo.find_all("td")[1].text
+        round_pen_at_distance = dict(zip(["10", "100", "500", "1000", "1500", "2000"], [int(x.text) for x in ammo.find_all("td")[2:]]))
+        parsed_ammo.append(Ammunition(name=round_name, ammo_type=round_type, pen_at_distance=round_pen_at_distance))
+    return parsed_ammo
 
 
 def parse_ground_armaments(armament_specs: Tag) -> Armament:
@@ -57,7 +81,6 @@ def parse_ground_armaments(armament_specs: Tag) -> Armament:
     print(armament.__dict__)
     return armament
 
-    
 
 
 def parse_ground_specs(response_content: str) -> str:
