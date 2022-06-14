@@ -10,18 +10,28 @@ def parse_XYZ_vehicle(response_content: str, html_tag: str):
 
 
 def parse_ground_vehicle(response_content: str, html_tag: str) -> Tank:
+
+    # TODO:
+    # bind non-secondary armament to their ammunitions (BMP2)?
+    # (Detailed e.g. Amnt of Smokes etc...) Vehicle Spec Parsing
+    # ATGMS !
+
+
     soup = BeautifulSoup(response_content, "html.parser", parse_only=SoupStrainer(class_="mw-parser-output"))
     specs = list(soup.find_all(class_="specs_info"))
     armaments = []
-    for spec in specs: # increase efficiency by list comprehensions thing
+
+    # Armament Parsing
+    for spec in specs:
         print(spec["class"])
         if len(spec["class"]) == 2 and spec["class"][1] == "weapon": # if spec["class"][0] == "specs_info weapon":
             armaments.append(spec)
     specs = [spec for spec in specs if len(spec["class"]) == 1 ]
     parsed_tank = Tank("Tank1")
-    #for armament in armaments:
-    #    parsed_tank.armaments.append(parse_ground_armaments(armament))
+    for armament in armaments:
+        parsed_tank.armaments.append(parse_ground_armaments(armament))
 
+    # Ammunitions Parsing
     tables = soup.find_all(class_="wikitable sortable")
     ammunitions: List[Ammunition]
     for table in tables:
@@ -33,6 +43,8 @@ def parse_ground_vehicle(response_content: str, html_tag: str) -> Tank:
             pass
     for ammo in ammunitions:
         print(ammo.__dict__)
+
+    # Vehicle Spec Parsing
 
 
 def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition]):
