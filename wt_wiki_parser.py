@@ -5,11 +5,11 @@ from tanks import Tank
 from typing import List
 
 
-def parser_XYZ_vehicle(response_content: str, html_tag: str):
+def parse_XYZ_vehicle(response_content: str, html_tag: str):
     pass
 
 
-def parser_ground_vehicle(response_content: str, html_tag: str) -> Tank:
+def parse_ground_vehicle(response_content: str, html_tag: str) -> Tank:
     soup = BeautifulSoup(response_content, "html.parser", parse_only=SoupStrainer(class_="mw-parser-output"))
     specs = list(soup.find_all(class_="specs_info"))
     armaments = []
@@ -31,10 +31,27 @@ def parser_ground_vehicle(response_content: str, html_tag: str) -> Tank:
             parse_ground_ammunitions_stats(ammo_specs=table, ammunitions=ammunitions)
         else:
             pass
+    for ammo in ammunitions:
+        print(ammo.__dict__)
 
 
 def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition]):
-    pass
+    round_specs = ammo_specs.find_all("tr")[3:]
+    for round in round_specs:
+        for ammo in ammunitions:
+            round_data = round.find_all("td")
+            if round_data[0].text != ammo.name:
+                continue
+            ammo.velocity = int(round_data[2].text.replace(",", ""))
+            ammo.projectile_mass = float(round_data[3].text.replace(",", ""))
+            ammo.ricochet = dict(zip(["0%", "50%","100%"], [int(angle.text.replace("°", "")) for angle in round_data[7:]]))
+            if not round_data[4].text == "N/A":
+                ammo.fuse_delay = float(round_data[4].text)
+            if not round_data[5].text == "N/A":
+                ammo.fuse_sensetivity = float(round_data[5].text)
+            if not round_data[6].text == "N/A":
+                ammo.explosive_mass = int(round_data[6].text.replace(",", ""))
+
 
 
 def parse_ground_ammunitions_pen(ammo_pen_specs: Tag) -> List[Ammunition]:
@@ -93,7 +110,7 @@ def __main__():
     with open("Magach_3_(USA).html", "r", encoding="utf-8") as data:
         content = data.read()
     #print(content)
-    parser_ground_vehicle(response_content=content, html_tag="")
+    parse_ground_vehicle(response_content=content, html_tag="")
 
 if __name__ == "__main__":
     __main__()

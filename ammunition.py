@@ -7,7 +7,7 @@ class Ammunition():
     pen_at_distance: Dict[str, int] = {"10": -1, "100": -1, "500": -1, "1000": -1, "1500": -1, "2000": -1}
     ricochet: Dict[str, int] = {"0%": -1, "50%": -1, "100%": -1}
     explosive_mass: float = -1.0
-    velocity: float
+    velocity: int
     projectile_mass: float
     fuse_delay: float
     fuse_sensitivity: float
