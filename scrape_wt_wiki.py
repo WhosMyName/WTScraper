@@ -41,7 +41,7 @@ def get_vehicles_by_nation(nation_url: str) -> Dict[str, str]:
     vehicle_list = {}
     for group in soup.find_all(class_="mw-category-group"):
         for list_entry in group.ul:
-            if type(list_entry) == bs4.Tag:
+            if type(list_entry) == Tag:
                 vehicle_list[list_entry.a.string] = f"{BASE_URL}{list_entry.a['href']}"
     return vehicle_list
 
@@ -64,7 +64,7 @@ def __main__():
     #get_vehicles_by_nation(get_aviation_nations().pop("USA"))
     #get_vehicles_by_nation(get_fleet_nations().pop("USA"))
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
-    get_vehicle_specs("https://wiki.warthunder.com/Magach_3_(USA)")
+    get_vehicle_specs("https://wiki.warthunder.com/Maus")
     #get_vehicle_specs("https://wiki.warthunder.com/F-84B-26")
     #get_vehicle_specs("https://wiki.warthunder.com/Kim_Qui")
 

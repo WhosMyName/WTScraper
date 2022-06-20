@@ -22,14 +22,20 @@ def parse_ground_vehicle(response_content: str, html_tag: str) -> Tank:
     unparsed_armaments: List[Armament] = []
 
     # Armament Parsing
-    specs = [spec for spec in specs if len(spec["class"]) == 1 ]
     unparsed_armaments = [spec for spec in specs if len(spec["class"]) == 2]
+    specs = [spec for spec in specs if len(spec["class"]) == 1 ]
     parsed_tank = Tank("Tank1")
     for armament in unparsed_armaments:
         parsed_tank.armaments.append(parse_ground_armaments(armament))
 
+
+    print(parsed_tank.__dict__)
+    for armament in parsed_tank.armaments:
+        print(armament.__dict__)
+
     # Ammunitions Parsing
-    tables = soup.find_all(class_="wikitable sortable")
+    tables = soup.find_all(class_="wikitable")
+    #for 
     ammunitions: List[Ammunition] = []
     for table in tables:
         if table.find("tr").find("th").text == "Penetration statistics":
@@ -61,7 +67,7 @@ def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition
             if not round_data[5].text == "N/A":
                 ammo.fuse_sensetivity = float(round_data[5].text)
             if not round_data[6].text == "N/A":
-                ammo.explosive_mass = int(round_data[6].text.replace(",", ""))
+                ammo.explosive_mass = float(round_data[6].text.replace(",", ""))
 
 
 
@@ -118,7 +124,9 @@ def parse_ground_specs(response_content: str) -> str:
 
 def __main__():
     content: str
-    with open("Magach_3_(USA).html", "r", encoding="utf-8") as data:
+    test_tank_file_name = "Maus.html"
+    #test_tank_file_name = "Magach_3_(USA).html"
+    with open(test_tank_file_name, "r", encoding="utf-8") as data:
         content = data.read()
     #print(content)
     parse_ground_vehicle(response_content=content, html_tag="")
