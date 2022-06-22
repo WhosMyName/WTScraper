@@ -12,7 +12,6 @@ def parse_XYZ_vehicle(response_content: str, html_tag: str):
 def parse_ground_vehicle(response_content: str, html_tag: str) -> Tank:
 
     # TODO:
-    # bind non-secondary armament to their ammunitions (BMP2)?
     # (Detailed e.g. Amnt of Smokes etc...) Vehicle Spec Parsing
     # ATGMS !
 
@@ -27,26 +26,25 @@ def parse_ground_vehicle(response_content: str, html_tag: str) -> Tank:
     parsed_tank = Tank("Tank1")
     for armament in unparsed_armaments:
         parsed_tank.armaments.append(parse_ground_armaments(armament))
-
-
-    print(parsed_tank.__dict__)
-    for armament in parsed_tank.armaments:
-        print(armament.__dict__)
-
+  
     # Ammunitions Parsing
     tables = soup.find_all(class_="wikitable")
-    #for 
     ammunitions: List[Ammunition] = []
-    for table in tables:
-        if table.find("tr").find("th").text == "Penetration statistics":
-            ammunitions = parse_ground_ammunitions_pen(table)
-        elif table.find("tr").find("th").text == "Shell details" and len(ammunitions):
-            parse_ground_ammunitions_stats(ammo_specs=table, ammunitions=ammunitions)
-        else:
-            pass
-    for ammo in ammunitions:
-        print(ammo.__dict__)
+    for iterator in range(0, len(tables)):
+        if len(tables[iterator]["class"]) == 2:
+            armament_name = tables[iterator - 1].find("tr").find("th").text.strip("n").strip()
+            if tables[iterator].find("tr").find("th").text == "Penetration statistics":
+                ammunitions = parse_ground_ammunitions_pen(ammo_pen_specs=tables[iterator], armament_name=armament_name)
+            elif tables[iterator].find("tr").find("th").text == "Shell details" and len(ammunitions):
+                parse_ground_ammunitions_stats(ammo_specs=tables[iterator], ammunitions=ammunitions)
+            else:
+                pass
+            for armament in parsed_tank.armaments:
+                if armament_name in armament.name:
+                    armament.ammo_types = ammunitions
 
+    for armament in parsed_tank.armaments:
+        print(armament.__str__())
     # Vehicle Spec Parsing
 
 
@@ -71,14 +69,14 @@ def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition
 
 
 
-def parse_ground_ammunitions_pen(ammo_pen_specs: Tag) -> List[Ammunition]:
+def parse_ground_ammunitions_pen(ammo_pen_specs: Tag, armament_name: str) -> List[Ammunition]:
     ammunitions = ammo_pen_specs.find_all("tr")[3:]
     parsed_ammo: List[Ammunition] = []
     for ammo in ammunitions:
         round_name = ammo.find_all("td")[0].text
         round_type = ammo.find_all("td")[1].text
         round_pen_at_distance = dict(zip(["10", "100", "500", "1000", "1500", "2000"], [int(x.text) for x in ammo.find_all("td")[2:]]))
-        parsed_ammo.append(Ammunition(name=round_name, ammo_type=round_type, pen_at_distance=round_pen_at_distance))
+        parsed_ammo.append(Ammunition(name=round_name, ammo_type=round_type, pen_at_distance=round_pen_at_distance, armamant_name=armament_name))
     return parsed_ammo
 
 
