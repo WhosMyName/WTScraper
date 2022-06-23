@@ -1,9 +1,11 @@
+"""Class description of a ground vehicle armament from WarThunder
+"""
+
 from ammunition import Ammunition
 from typing import List, Dict
 
 class Armament():
     name: str
-    is_secondary: bool
     ammo_types: List[Ammunition] = []
     vertical_guidance: Dict[str, int] = {"positive": 0, "negative": 0}
     reload_time: Dict[str, float] = {"basic": 0.0, "aces": 0.0}
@@ -13,6 +15,8 @@ class Armament():
     first_stowage: int
     capacity: int
     belt_capacity: int
+    # stabilizer # 0 planes 1 plane  2 plane
+    # autoloader: bool
 
     def __init__(self, name: str) -> None:
         self.name = name

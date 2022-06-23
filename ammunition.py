@@ -1,3 +1,6 @@
+"""Class description of a ground vehicle armament ammunition from WarThunder
+"""
+
 from typing import Dict
 
 
