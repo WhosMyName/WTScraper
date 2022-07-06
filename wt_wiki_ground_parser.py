@@ -284,7 +284,7 @@ def __main__():
         "VEAK_40", # Radar not in Wiki
     ]
     for vehicle in test_vehicles:
-        test_tank_file_name = f"{vehicle}.html"
+        test_tank_file_name = f"Test_Vehicles\\{vehicle}.html"
         with open(test_tank_file_name, "r", encoding="utf-8") as data:
             content = data.read()
         parse_ground_vehicle(response_content=content)

@@ -113,7 +113,7 @@ def get_vehicle_specs(vehicle_url: str): # WIP
     """
     content = requests.get(vehicle_url).text
     soup = BeautifulSoup(content, "html.parser", parse_only=SoupStrainer(class_="mw-normal-catlinks"))
-    with open(f"{vehicle_url.split('/')[len(vehicle_url.split('/')) - 1]}.html", "w", encoding="utf-8") as vec:
+    with open(f"Test_Vehicles\\{vehicle_url.split('/')[len(vehicle_url.split('/')) - 1]}.html", "w", encoding="utf-8") as vec:
         vec.write(content)
     if "ground" in soup.ul.li.string.lower():
         print("Earth")
