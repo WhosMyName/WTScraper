@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# HTML files
+*.html
+
+# the regex check file
+regex.chk
