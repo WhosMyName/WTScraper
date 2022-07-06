@@ -39,8 +39,8 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     unparsed_armaments: List[Armament] = []
 
     # Armament Parsing
-    unparsed_armaments = [spec for spec in specs if len(spec["class"]) == 2]
-    specs = [spec for spec in specs if len(spec["class"]) == 1 ]
+    unparsed_armaments = [spec for spec in specs if len(spec["class"]) == 2] # specs_info weapons
+    specs = [spec for spec in specs if len(spec["class"]) == 1 ] # specs_info
     parsed_tank = Tank(name=soup.find(class_="general_info_name").text)
     for armament in unparsed_armaments:
         parsed_tank.armaments.append(parse_ground_armaments(armament))
