@@ -131,9 +131,33 @@ def __main__():
     #get_vehicles_by_nation(get_aviation_nations().pop("USA"))
     #get_vehicles_by_nation(get_fleet_nations().pop("USA"))
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
-    get_vehicle_specs("https://wiki.warthunder.com/M24")
-    #get_vehicle_specs("https://wiki.warthunder.com/F-84B-26")
-    #get_vehicle_specs("https://wiki.warthunder.com/Kim_Qui")
+    test_vehicles = [
+        "AML-90_(Israel)", # Name parsing Israeal
+        "Magach_3_(USA)", # Name Parsing USA
+        "Maus", # Multi Cannon
+        "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
+        "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
+        "Type_62_(USSR)", # NAme Parsing USSR
+        "Sho't_Kal_Dalet_(Great_Britain)", # Name Parsing GB
+        "M47_(Japan)", # Name Parsing JP, Rangefinder
+        "PT-76_(China)", # Name Parsing Taiwan
+        "ItO_90M_(France)", # Name Parsing France
+        "Bkan_1C", # Reverse Gearbox
+        "AMX-10RC", # Suspension
+        "Object_685", # Amphibious, Autoloader
+        "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
+        "Centauro_I_105", # LWS, Thermals
+        "ZSU-23-4", # Radar in Wiki
+        "SIDAM_25", # Optotronics
+        "VEAK_40", # Radar not in Wiki
+        "AMX-30B2_BRENUS", # passive APS
+        "Black_Night", # Active APS
+        "M113A1_(TOW)", # fire on the move 5km/h
+        "Strv_81_(RB_52)", # tank with missel launcher
+        "M901" # lowes fire while moving speed found (1km/h)
+    ]
+    for vehicle in test_vehicles:
+        get_vehicle_specs(f"https://wiki.warthunder.com/{vehicle}")
 
 if __name__ == "__main__":
     __main__()
