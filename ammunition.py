@@ -14,13 +14,10 @@ class Ammunition():
     projectile_mass: float
     fuse_delay: float
     fuse_sensitivity: float
-    armamant_name: str
 
-    def __init__(self, name: str, ammo_type: str, pen_at_distance: Dict[int, int], armamant_name: str) -> None:
+    def __init__(self, name: str, ammo_type: str, pen_at_distance: Dict[int, int]) -> None:
         self.name = name
         self.ammo_type = ammo_type
         self.pen_at_distance = pen_at_distance
-        self.armamant_name = armamant_name
-
     def __str__(self) -> str:
         return f"{self.name}: {self.ammo_type}"
