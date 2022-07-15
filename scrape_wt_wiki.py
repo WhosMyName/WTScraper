@@ -147,6 +147,8 @@ def __main__():
         "Object_685", # Amphibious, Autoloader
         "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
         "Centauro_I_105", # LWS, Thermals
+        "ADATS_(M113)", # ATGM
+        "BMP-2M", # Squadron
         "ZSU-23-4", # Radar in Wiki
         "SIDAM_25", # Optotronics
         "VEAK_40", # Radar not in Wiki
