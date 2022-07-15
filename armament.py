@@ -8,6 +8,8 @@ from typing import List, Dict
 #class Stbilizer(Enum):
 
 class Stabilizer(Enum):
+    """Enum Class that represents a Armament Stabilizer
+    """
     NONE = 1
     VERTICAL = 2
     SHOULDER = 3
@@ -15,21 +17,36 @@ class Stabilizer(Enum):
 
 
 class Armament():
-    name: str
-    ammo_types: List[Ammunition] = []
-    vertical_guidance: Dict[str, int] = {"positive": 0, "negative": 0}
-    reload_time: Dict[str, float] = {"basic": 0.0, "aces": 0.0}
-    diameter: float = -1.0
-    fire_rate: int = -1
-    fire_while_moving: bool = False # check how this is handled, it might be a max_firing_speed!! # it is!
-    first_stowage: int = -1
-    capacity: int = -1
-    belt_capacity: int = -1
-    stabilizer: Stabilizer = Stabilizer.NONE
-    autoloader: bool = False
+    """Class that represents a WarThunder Ground Vehicle Armament (Waepon)
+    """
 
     def __init__(self, name: str) -> None:
-        self.name = name
+        """ init
+
+        Parameters
+        ----------
+        name : str
+            Name of the armament
+        """
+        self.name: str = name
+        self.ammo_types: List[Ammunition] = []
+        self.vertical_guidance: Dict[str, int] = {"positive": 0, "negative": 0}
+        self.reload_time: Dict[str, float] = {"basic": 0.0, "aces": 0.0}
+        self.diameter: float = -1.0
+        self.fire_rate: int = -1
+        self.fire_while_moving: bool = False # check how this is handled, it might be a max_firing_speed!! # it is!
+        self.first_stowage: int = -1
+        self.capacity: int = -1
+        self.belt_capacity: int = -1
+        self.stabilizer: Stabilizer = Stabilizer.NONE
+        self.autoloader: bool = False
 
     def __str__(self) -> str:
+        """returns a summary of an armament
+
+        Returns
+        -------
+        str
+            armament name and a list of the usable rounds
+        """
         return f"{self.name} with Rounds: [{' | '.join(ammo.__str__() for ammo in self.ammo_types) or 'Default'}]"
