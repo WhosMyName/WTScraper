@@ -25,10 +25,11 @@ class Ammunition():
         self.pen_at_distance: Dict[str, int] = pen_at_distance # {"10": -1, "100": -1, "500": -1, "1000": -1, "1500": -1, "2000": -1}
         self.ricochet: Dict[str, int] = {"0%": -1, "50%": -1, "100%": -1}
         self.velocity: int = -1
-        self.explosive_mass: float
+        self.explosive_mass: int
         self.projectile_mass: float = -1.0
         self.fuse_delay: float
         self.fuse_sensitivity: float
+        self.range: int
 
     def __str__(self) -> str:
         """returns the summary of a shell
