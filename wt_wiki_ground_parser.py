@@ -26,8 +26,6 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     # TODO:
     # Horizontal Guidance
     # Radar
-    # Scout (confused shrug or done)
-    # Variable Suspension ? (hydropneumatic suspension)
     # APS ?
     # Composite armour
 
@@ -53,7 +51,7 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     elif vehicle_class == "SPAA":
         parsed_tank.vehicle_class = VehicleClass.SPAA
     elif vehicle_class == "Tank destroyer":
-        parsed_tank.vehicle_class = VehicleClass.SPG
+        parsed_tank.vehicle_class = VehicleClass.TANK_DESTROYER
     else:
         print(f"{parsed_tank.name}: {vehicle_class}")
 
@@ -89,6 +87,9 @@ def parse_ground_vehicle(response_content: str) -> Tank:
         parsed_tank.armaments.append(parse_ground_armaments(armament))
   
     # Ammunitions Parsing
+    
+    #statistics = [elem for elem in soup.find_all(class_="wikitable") if len(elem["class"]) == 1]
+    #tables = [elem for elem in soup.find_all(class_="wikitable") if len(elem["class"]) == 2]
     tables = soup.find_all(class_="wikitable")
     ammunitions: List[Ammunition] = []
     for iterator in range(0, len(tables)):
@@ -106,6 +107,12 @@ def parse_ground_vehicle(response_content: str) -> Tank:
                 #print(f"Armament:{bytes(armament.name, encoding='utf-8')}:{bytes(armament_name, encoding='utf-8')}")
                 if armament_name in armament.name:
                     armament.ammo_types = ammunitions
+        else:
+            # parse the turret rotation speed if any
+            for elem in tables[iterator].find_all("th"):
+                if "Turret rotation speed" in elem.text.strip():
+                    pass
+                    # 4-8
 
     # Vehicle Spec Parsing
     specs = [spec for spec in specs if len(spec["class"]) == 1 ] # specs_info
@@ -321,15 +328,15 @@ def __main__():
         # "PT-76_(China)", # Name Parsing Taiwan
         # "ItO_90M_(France)", # Name Parsing France
         # "Bkan_1C", # Reverse Gearbox
-        # "AMX-10RC", # Suspension
+        "AMX-10RC", # Suspension
         # "Object_685", # Amphibious, Autoloader
         # "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
         # "Centauro_I_105", # LWS, Thermals
         # "ADATS_(M113)", # ATGM
-        "BMP-2M", # Squadron
-        "ZSU-23-4", # Radar in Wiki
-        "SIDAM_25", # Optotronics
-        "VEAK_40", # Radar not in Wiki
+        # "BMP-2M", # Squadron
+        # "ZSU-23-4", # Radar in Wiki
+        # "SIDAM_25", # Optotronics
+        # "VEAK_40", # Radar not in Wiki
     ]
     for vehicle in test_vehicles:
         test_tank_file_name = f"Test_Vehicles\\{vehicle}.html"

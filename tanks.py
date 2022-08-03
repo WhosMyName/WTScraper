@@ -10,7 +10,7 @@ class VehicleClass(Enum):
     LIGHT = 2
     MEDIUM = 3
     HEAVY = 4
-    SPG = 5
+    TANK_DESTROYER = 5
     SPAA = 6
 
 class Tank():
