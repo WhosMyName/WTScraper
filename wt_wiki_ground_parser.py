@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup, SoupStrainer, Tag
 from ammunition import Ammunition
 from armament import Armament, Stabilizer
 from tanks import Tank, VehicleClass
-from typing import List
+from typing import Dict, List
+from html_table_parser import HTMLTableParser
 
 
 def parse_ground_vehicle(response_content: str) -> Tank:
@@ -81,10 +82,10 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     battle_rating  = [float(br.text.strip()) for br in soup.find(class_="general_info_br").find_all("td")[3:]]# grab all table entries, use only the last 3 as they contain the BR 
     parsed_tank.battle_rating = {"AB": battle_rating[0], "RB": battle_rating[1], "SB": battle_rating[2]}
 
-    # Armament Parsing
+    # Armament Name Parsing
     unparsed_armaments = [spec for spec in specs if len(spec["class"]) == 2] # specs_info weapons
     for armament in unparsed_armaments:
-        parsed_tank.armaments.append(parse_ground_armaments(armament))
+        parsed_tank.armaments.append(parse_ground_armament_name(armament))
   
     # Ammunitions Parsing
     
@@ -104,15 +105,18 @@ def parse_ground_vehicle(response_content: str) -> Tank:
             else:
                 pass
             for armament in parsed_tank.armaments:
-                #print(f"Armament:{bytes(armament.name, encoding='utf-8')}:{bytes(armament_name, encoding='utf-8')}")
                 if armament_name in armament.name:
                     armament.ammo_types = ammunitions
         else:
-            # parse the turret rotation speed if any
-            for elem in tables[iterator].find_all("th"):
-                if "Turret rotation speed" in elem.text.strip():
-                    pass
-                    # 4-8
+            # parse the detailed armament spec
+            if tables[iterator].find("th").find("a") and "mm" in tables[iterator].find("th").text: # searching for the link of an armament and "mm" in the text
+                armament_name = tables[iterator].find("th").text.strip()
+                for armament in parsed_tank.armaments:
+                    print(f"Armament:{bytes(armament.name, encoding='utf-8')}:{bytes(armament_name, encoding='utf-8')}")
+                    if armament_name in armament.name:
+                        parse_ground_armament(armament, tables[iterator])
+                
+
 
     # Vehicle Spec Parsing
     specs = [spec for spec in specs if len(spec["class"]) == 1 ] # specs_info
@@ -125,21 +129,21 @@ def parse_ground_vehicle(response_content: str) -> Tank:
 
 
 
-    for feature in soup.find_all(class_="feature_name"):
-        if feature.text.strip() == "Amphibious":
+    for feature in [elem.text.strip() for elem in soup.find_all(class_="feature_name")]:
+        if feature == "Amphibious":
             parsed_tank.is_amphibious = True
-        elif feature.text.strip() == "ERA":
+        elif feature == "ERA":
             parsed_tank.era = True
-        elif feature.text.strip() == "Reverse gearbox":
+        elif feature == "Reverse gearbox":
             parsed_tank.reverse_gearbox = True
-        elif feature.text.strip() == "Controlled suspension":
+        elif feature == "Controlled suspension":
             parsed_tank.controlled_suspension = True
-        elif "stabilizer" in feature.text.strip() or feature.text.strip() == "Autoloader" : # keep this here to catch all the funky stuff
+        elif "stabilizer" in feature or feature == "Autoloader" : # keep this here to catch all the funky stuff
             pass
-        elif feature.text.strip() in ["Smoke grenades", "ESS", "Laser rangefinder", "Night vision device", "Rangefinder", "Self-entrenching equipment"]: # we got those parsed already, so no need for warnings
+        elif feature in ["Smoke grenades", "ESS", "Laser rangefinder", "Night vision device", "Rangefinder", "Self-entrenching equipment"]: # we got those parsed already, so no need for warnings
             pass
         else:
-            print(f"Feature WARN: {feature.text.strip()}") # add logging here
+            print(f"Feature WARN: {feature}") # add logging here
 
 
     # Vehicle Modification Parsing
@@ -164,12 +168,13 @@ def parse_ground_vehicle(response_content: str) -> Tank:
         # Rangefinding
         elif mod.text.strip() == "Rangefinder":
             parsed_tank.rangefinder = True
-        elif mod.text.strip() == "LR":
+        elif mod.text.strip() == "LR" or "Laser rangefinder":
             parsed_tank.laser_rangefinder = True
         elif mod.text.strip() == "LWS/LR":
             parsed_tank.laser_warning_rangefinder = True
 
     print(parsed_tank.__str__())
+    print(parsed_tank.__dict__)
 
 
 
@@ -230,15 +235,8 @@ def parse_ground_ammunitions_pen(ammo_pen_specs: Tag) -> List[Ammunition]:
     return parsed_ammo
 
 
-def parse_ground_armaments(armament_specs: Tag) -> Armament:
-    """Parses Ground Vehicle Armaments and Specs:
-    Capacity
-    Belt capacity
-    Fire rate
-    First-order Ammo Stowage
-    Vertical guidance
-    Reload
-
+def parse_ground_armament_name(armament_specs: Tag) -> Armament:
+    """Parses the Armaments Name and creates a corresponding object
     Parameters
     ----------
     armament_specs : Tag
@@ -261,54 +259,91 @@ def parse_ground_armaments(armament_specs: Tag) -> Armament:
     except AttributeError as excp:
         pass
 
-    armament = Armament(name=armament_name)
-    for stat in armament_specs.find_all(class_="specs_char_block"):
-        if stat.find(class_="name").text.strip() == "Belt capacity":
-            armament.belt_capacity = int(stat.find(class_="value").text.split(" rounds")[0].replace(" ", ""))
-        elif stat.find(class_="name").text.strip() == "Ammunition":
-            armament.capacity = int(stat.find(class_="value").text.split(" rounds")[0].replace(" ", ""))
-        elif stat.find(class_="name").text.strip() == "Fire rate":
-            armament.fire_rate = int(stat.find(class_="value").text.split(" shots")[0].replace(" ", ""))
-        elif stat.find(class_="name").text.strip() == "First-order":
-            armament.first_stowage = int(stat.find(class_="value").text.split(" rounds")[0].replace(" ", ""))
-        elif stat.find(class_="name").text.strip() == "Vertical guidance":
-            guidances = [int(x) for x in stat.find(class_="value").text.replace("°", "").split(" / ")]
-            if guidances[0] > guidances[1]:
-                armament.vertical_guidance = {"positive": guidances[0], "negative": guidances[1]}
-            else:
-                armament.vertical_guidance = {"positive": guidances[1], "negative": guidances[0]}
-        elif stat.find(class_="name").text.strip() == "Reload":
-            try:
-                if stat.find(class_="specs_char_line indent"): # i'd guess this case is used if there's no autoloader
-                    reloads = [float(x) for x in stat.find(class_="specs_char_line indent").find(class_="value").text.rstrip(" s").split(" → ")]
-                else:
-                    reloads = [float(x) for x in stat.find(class_="value").text.rstrip(" s").split(" → ")]
-            except AttributeError as excp:
-                pass
+    if armament_name:
+        armament = Armament(name=armament_name)
+        return armament
+    else:
+        raise AttributeError(armament_specs)
 
-            if len(reloads) > 1: # reloads improve with crew skill
-                if reloads[0] > reloads[1]:
-                    armament.reload_time = {"basic": reloads[0], "aces": reloads[1]}
-                else:
-                    armament.reload_time = {"basic": reloads[1], "aces": reloads[0]}
-            else: # except when using autoloaders
-                armament.autoloader = True
-                armament.reload_time = {"basic": reloads[0], "aces": reloads[0]}
 
-    # parse all the stabilizers, as they are "features" of the armament
-    for feature in armament_specs.find_all(class_="feature_name"):
-        if feature.text.strip() == "Autoloader": # keep this here so we can catch some fancy stuff in the auto-m8'd phase
-            pass
-        elif feature.text.strip() == "Two-plane stabilizer":
-            armament.stabilizer = Stabilizer.TWOPLANE
-        elif feature.text.strip() == "Vertical stabilizer":
-            armament.stabilizer = Stabilizer.VERTICAL
-        elif feature.text.strip() == "Shoulder stabilizer":
-            armament.stabilizer = Stabilizer.SHOULDER
-        else:
-            print(f"Armament Feature WARN: {feature.text.strip()}") # add logging here
+def parse_ground_armament(armament: Armament, specs_table: Tag):
+    """Parses Ground Vehicle Armaments and Specs:
+    Capacity
+    Belt capacity
+    Fire rate
+    First-order Ammo Stowage
+    Vertical guidance
+    Horizontal Guidance
+    Reload
 
-    return armament
+    Parameters
+    ----------
+    armament_specs : Tag
+        _description_
+    specs : Tag
+        _description_
+    """
+    table = HTMLTableParser()
+    table.feed(str(specs_table))
+    specs = table.tables[0]
+    if len(specs[0]) == 1: # small caliber arms with Belt, fire rate, horizontal/vertical
+        for iterator in range(0, len(specs[1])):
+            if specs[1][iterator] == "Capacity (Belt)":
+                armament.capacity = int(specs[2][iterator].split(" ")[0].replace(",", ""))
+                armament.belt_capacity = int(specs[2][iterator].split("(")[1].rstrip(")"))
+            elif specs[1][iterator] == "Fire rate":
+                armament.fire_rate = int(specs[2][iterator])
+            elif specs[1][iterator] == "Vertical":
+                armament.vertical_guidance = parse_vertical_guidance(guidance_value=specs[2][iterator])
+    elif len(specs[0]) == 3: # Big Iron on the Platform
+        # "equalize" both arcade and realistic tables
+        arcade = specs[2]
+        realistic = ["Realistic"] + arcade[1:5] + specs[3][1:] + arcade[10:14]
+        armament.capacity = arcade[1]
+        armament.vertical_guidance = parse_vertical_guidance(guidance_value=arcade[2])
+        armament.stabilizer = get_stabilizer_type(arcade[4])
+        armament.reload_time = {
+            "stock":float(arcade[10]),
+            "full": float(arcade[11]),
+            "expert": float(arcade[11]),
+            "aces": float(arcade[13])
+            }
+        armament.rotation_speed_arcade = {
+            "stock": float(arcade[5]),
+            "upgraded": float(arcade[6]),
+            "full": float(arcade[7]),
+            "expert": float(arcade[8]),
+            "aces": float(arcade[9])
+            }
+        armament.rotation_speed_realistic = {
+            "stock": float(realistic[5]),
+            "upgraded": float(realistic[6]),
+            "full": float(realistic[7]),
+            "expert": float(realistic[8]),
+            "aces": float(realistic[9])
+            }
+    print(armament.__dict__)
+
+def get_stabilizer_type(stablizer_string: str) -> Stabilizer:
+    if stablizer_string == "Two-plane":
+        return Stabilizer.TWOPLANE
+    elif stablizer_string == "Vertical":
+        return Stabilizer.VERTICAL
+    elif stablizer_string == "Shoulder":
+        return Stabilizer.SHOULDER
+    else:
+        print(f"Armament Feature WARN: {stablizer_string}") # add logging here
+        return Stabilizer.NONE
+
+        
+def parse_vertical_guidance(guidance_value: str) -> Dict[str, int]:
+    guidances = [int(x) for x in guidance_value.replace("°", "").split("/")]
+    if guidances[0] > guidances[1]:
+        return {"positive": guidances[0], "negative": guidances[1]}
+    else:
+        return {"positive": guidances[1], "negative": guidances[0]}
+
+    
 
 
 

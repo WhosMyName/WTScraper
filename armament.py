@@ -31,7 +31,9 @@ class Armament():
         self.name: str = name
         self.ammo_types: List[Ammunition] = []
         self.vertical_guidance: Dict[str, int] = {"positive": 0, "negative": 0}
-        self.reload_time: Dict[str, float] = {"basic": 0.0, "aces": 0.0}
+        self.reload_time: Dict[str, float] = {"stock": 0.0, "full": 0.0, "expert": 0.0, "aces": 0.0}
+        self.rotation_speed_arcade: Dict[str, float] = {"stock": 0.0, "upgraded": 0.0, "full": 0.0, "expert": 0.0, "aces": 0.0}
+        self.rotation_speed_realistic: Dict[str, float] = {"stock": 0.0, "upgraded": 0.0, "full": 0.0, "expert": 0.0, "aces": 0.0}
         self.diameter: float = -1.0
         self.fire_rate: int = -1
         self.fire_while_moving: bool = False # check how this is handled, it might be a max_firing_speed!! # it is!
