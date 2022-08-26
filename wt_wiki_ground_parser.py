@@ -25,7 +25,6 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     """
 
     # TODO:
-    # Horizontal Guidance
     # Radar
     # APS ?
     # Composite armour
@@ -35,7 +34,7 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     unparsed_armaments: List[Armament] = []
 
     # General Tank Parsing (Name, VehicleClass, Premium, Squadron)
-    parsed_tank = Tank(name=soup.find(class_="general_info_name").text)
+    parsed_tank = Tank(name=soup.find(class_="general_info_name").text.strip())
     parsed_tank.is_squadron = True if soup.find(class_="squadron") else False
     parsed_tank.is_premium = True if soup.find(class_="premium") else False
     if parsed_tank.is_squadron:
@@ -80,18 +79,109 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     elif text_rank == "X":
         parsed_tank.rank = 10
     battle_rating  = [float(br.text.strip()) for br in soup.find(class_="general_info_br").find_all("td")[3:]]# grab all table entries, use only the last 3 as they contain the BR 
-    parsed_tank.battle_rating = {"AB": battle_rating[0], "RB": battle_rating[1], "SB": battle_rating[2]}
+    parsed_tank.battle_rating = {"Arcade": battle_rating[0], "Realistic": battle_rating[1], "Simulator": battle_rating[2]}
+
+    # Vehicle cost
+    # some vehicles like pack premiums don't have both RP/SL cost, but GE Premiums have a GE cost and 
+    # Squadron vehicles have both SquadronRP and SL cost
+    if soup.find(class_="general_info_price_research"):
+        parsed_tank.research = int(soup.find(class_="general_info_price_research").find(class_="value").text.strip().replace(" ", ""))
+    if soup.find(class_="general_info_price_buy"):
+        if not soup.find(class_="general_info_price_buy").find(class_="value small"): # "value small" indicates a bundle or gift premium
+            parsed_tank.cost= int(soup.find(class_="general_info_price_buy").find(class_="value").text.strip().replace(" ", ""))
+    if parsed_tank.is_premium and parsed_tank.research == -1: # no premium vehicle has a research kost
+        parsed_tank.research = 0
+
+    # Vehicle Spec Parsing
+    # parse Armour[Hull, turret], crew, visibility
+    tables = soup.find_all(class_="wikitable")
+    vehicle_specs = [spec for spec in specs if len(spec["class"]) == 1 ] # specs_info
+    for spec in vehicle_specs:
+        if spec.find(class_="name") and spec.find(class_="name").text.strip() == "Armour":
+            elems = [x.text.strip() for x in spec.find_all(class_="value")]
+            parsed_tank.armour_hull = dict(zip(["front", "side", "back"], [int(num) for num in elems[1].split(" / ")]))
+            parsed_tank.armour_turret = dict(zip(["front", "side", "back"], [int(num) for num in elems[2].split(" / ")]))
+            parsed_tank.crew = int(elems[3].split(" ")[0])
+            parsed_tank.visibility = int(elems[4].replace("\xa0", " ").split(" ")[0])
+        elif spec.find(class_="name") and spec.find(class_="name").text.strip() == "Repair cost":
+            elems = [x.text.strip() for x in spec.find_all(class_="value")]
+            if not parsed_tank.is_premium: # this is a non-premium vehicle, because you can't remove modifications from premium vehicles
+                # gaijin wtf ???
+                parsed_tank.repair_cost_stock = {
+                    "Arcade": int(elems[1].split(" → ")[0].replace(" ", "")),
+                    "Realistic": int(elems[2].split(" → ")[0].replace(" ", "")),
+                    "Simulator": int(elems[3].split(" → ")[0].replace(" ", ""))
+                    }
+                parsed_tank.repair_cost_upgraded = {
+                    "Arcade": int(elems[1].split(" → ")[1].replace(" ", "")),
+                    "Realistic": int(elems[2].split(" → ")[1].replace(" ", "")),
+                    "Simulator": int(elems[3].split(" → ")[1].replace(" ", ""))
+                    }
+                parsed_tank.total_cost_modifications_rp = int(elems[4].replace(" ", ""))
+                parsed_tank.total_cost_modifications_sl = int(elems[5].replace(" ", ""))
+                parsed_tank.talisman_cost = int(elems[6].replace(" ", ""))
+                parsed_tank.crew_training = int(elems[7].replace(" ", ""))
+                parsed_tank.rewards_sl = dict(zip(["Arcade", "Realistic", "Simulator"], [int(x) for x in elems[12].rstrip("\xa0%").split(" / ")]))
+                parsed_tank.rewards_rp = dict(zip(["Arcade", "Realistic", "Simulator"], [int(x) for x in elems[13].rstrip("\xa0%").split(" / ")]))
+            else:
+                parsed_tank.repair_cost_stock = {"Arcade": 0, "Realistic": 0, "Simulator": 0}
+                parsed_tank.repair_cost_upgraded = {
+                    "Arcade": int(elems[1].replace(" ", "")),
+                    "Realistic": int(elems[2].replace(" ", "")),
+                    "Simulator": int(elems[3].replace(" ", ""))
+                    }
+                parsed_tank.crew_training = int(elems[4].replace(" ", ""))
+                parsed_tank.rewards_sl = dict(zip(["Arcade", "Realistic", "Simulator"], [int(x) for x in elems[9].rstrip("\xa0%").lstrip("2 ×\xa0").split(" / ")]))
+                parsed_tank.rewards_rp = dict(zip(["Arcade", "Realistic", "Simulator"], [int(x) for x in elems[10].rstrip("\xa0%").lstrip("2 ×\xa0").split(" / ")]))
+        elif spec.find(class_="name") and spec.find(class_="name").text.strip() == "Speed":
+            # parse weight and gears
+            elems = [x.text.strip() for x in spec.find_all(class_="value")]
+            parsed_tank.gears = {
+                "Forward": int(elems[3].split(" ")[0]),
+                "Back": int(elems[4].split(" ")[0])
+                }
+            parsed_tank.weight = float(elems[5].split(" ")[0])
+
+    # parse speed, engine power, power/weight
+        for specs_table in tables:
+            if specs_table.find_all("th")[1].text.strip() == "Max Speed (km/h)":
+                table = HTMLTableParser()
+                table.feed(str(specs_table))
+                specs_table = table.tables[0]
+                aoa = 1 if "AoA" in specs_table[1] else 0 # AoA is Add-on Armour that can be added dynamically
+                arcade = specs_table[2]
+                realistic = specs_table[3][:3] + arcade[3:4+aoa] + specs_table[3][3:]
+                parsed_tank.max_speed_forward = {
+                    "Realistic": int(realistic[1]),
+                    "Arcade": int(arcade[1])
+                    }
+                parsed_tank.max_speed_reverse = {
+                    "Realistic": int(realistic[2]),
+                    "Arcade": int(arcade[2])
+                    }
+                parsed_tank.engine_power_stock = {
+                    "Realistic": realistic[4+aoa],
+                    "Arcade": arcade[4+aoa]
+                    }
+                parsed_tank.engine_power_upgraded = {
+                    "Realistic": int(realistic[5+aoa]),
+                    "Arcade": int(arcade[5+aoa])
+                    }
+                parsed_tank.power_to_weight_stock = {
+                    "Realistic": float(realistic[6+aoa]),
+                    "Arcade": float(arcade[6+aoa])
+                    }
+                parsed_tank.power_to_weight_upgraded = {
+                    "Realistic": float(realistic[7+aoa]),
+                    "Arcade": float(arcade[7+aoa])
+                    }
 
     # Armament Name Parsing
     unparsed_armaments = [spec for spec in specs if len(spec["class"]) == 2] # specs_info weapons
     for armament in unparsed_armaments:
         parsed_tank.armaments.append(parse_ground_armament_name(armament))
   
-    # Ammunitions Parsing
-    
-    #statistics = [elem for elem in soup.find_all(class_="wikitable") if len(elem["class"]) == 1]
-    #tables = [elem for elem in soup.find_all(class_="wikitable") if len(elem["class"]) == 2]
-    tables = soup.find_all(class_="wikitable")
+    # Armament/Ammunitions Parsing
     ammunitions: List[Ammunition] = []
     for iterator in range(0, len(tables)):
         if len(tables[iterator]["class"]) == 2:
@@ -115,20 +205,8 @@ def parse_ground_vehicle(response_content: str) -> Tank:
                     print(f"Armament:{bytes(armament.name, encoding='utf-8')}:{bytes(armament_name, encoding='utf-8')}")
                     if armament_name in armament.name:
                         parse_ground_armament(armament, tables[iterator])
-                
 
-
-    # Vehicle Spec Parsing
-    specs = [spec for spec in specs if len(spec["class"]) == 1 ] # specs_info
-    for spec in specs:
-        #print(f"{spec}\n\n")
-        pass
-        # parse Armour, Hull, turret, crew, visibility
-        # parse speed, gears, weight, engine power, power/weight
-        # parse repair cost, crew training, battle reward, 
-
-
-
+    # Non-Modification Feature Parsing
     for feature in [elem.text.strip() for elem in soup.find_all(class_="feature_name")]:
         if feature == "Amphibious":
             parsed_tank.is_amphibious = True
@@ -145,10 +223,8 @@ def parse_ground_vehicle(response_content: str) -> Tank:
         else:
             print(f"Feature WARN: {feature}") # add logging here
 
-
     # Vehicle Modification Parsing
     # ----- Get Modifications -> get specs (smokes, ess, nvd, tvd, lws, lr, rangefinder, etc...) | <div class="specs_mod">
-    # in extra funktion auslagern # def parse_ground_vehicle_modifications(Tank, )
     for mod in soup.find_all(class_="specs_mod_name"):
         if mod.text.strip() == "Smoke grenade":
             parsed_tank.smokes = True
@@ -177,7 +253,6 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     print(parsed_tank.__dict__)
 
 
-
 def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition]):
     """Parses Specs (Velocity, Masses, Fuse Data and Ricochet Probabilit) of Ground Vehicle Ammunition 
 
@@ -200,16 +275,15 @@ def parse_ground_ammunitions_stats(ammo_specs: Tag, ammunitions: List[Ammunition
             if "ATGM" in round_data[1].text.strip(): # check if the round is a ATGM missile and apply offset if needed
                 atgm_offset = 1
                 ammo.range = int(round_data[2].text.strip().replace(",", ""))
-            ammo.velocity = int(round_data[2+atgm_offset].text.replace(",", ""))
-            ammo.projectile_mass = float(round_data[3+atgm_offset].text.replace(",", ""))
-            ammo.ricochet = dict(zip(["0%", "50%","100%"], [int(angle.text.replace("°", "")) for angle in round_data[7+atgm_offset:]]))
+            ammo.velocity = int(round_data[2+atgm_offset].text.strip().replace(",", ""))
+            ammo.projectile_mass = float(round_data[3+atgm_offset].text.strip().replace(",", ""))
+            ammo.ricochet = dict(zip(["0%", "50%","100%"], [int(angle.text.strip().replace("°", "")) for angle in round_data[7+atgm_offset:]]))
             if not round_data[4+atgm_offset].text.strip() == "N/A":
-                ammo.fuse_delay = float(round_data[4+atgm_offset].text)
+                ammo.fuse_delay = float(round_data[4+atgm_offset].text.strip())
             if not round_data[5+atgm_offset].text.strip() == "N/A":
-                ammo.fuse_sensetivity = float(round_data[5+atgm_offset].text)
+                ammo.fuse_sensetivity = float(round_data[5+atgm_offset].text.strip())
             if not round_data[6+atgm_offset].text.strip() == "N/A":
-                ammo.explosive_mass = int(round_data[6+atgm_offset].text.replace(",", ""))
-
+                ammo.explosive_mass = int(round_data[6+atgm_offset].text.strip().replace(",", "").replace(".", ""))
 
 
 def parse_ground_ammunitions_pen(ammo_pen_specs: Tag) -> List[Ammunition]:
@@ -337,6 +411,8 @@ def get_stabilizer_type(stablizer_string: str) -> Stabilizer:
 
         
 def parse_vertical_guidance(guidance_value: str) -> Dict[str, int]:
+    if guidance_value == "N/A":
+        return {"positive": 0, "negative": 0}
     guidances = [int(x) for x in guidance_value.replace("°", "").split("/")]
     if guidances[0] > guidances[1]:
         return {"positive": guidances[0], "negative": guidances[1]}
@@ -344,26 +420,23 @@ def parse_vertical_guidance(guidance_value: str) -> Dict[str, int]:
         return {"positive": guidances[1], "negative": guidances[0]}
 
     
-
-
-
 def __main__():
     """Main-ly used for standalone testing during developemnt
     """
     content: str
     test_vehicles = [
-        # "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
-        # "AML-90_(Israel)", # Name parsing Israeal
-        # "Magach_3_(USA)", # Name Parsing USA
+        "AML-90_(Israel)", # Name parsing Israeal
+        "Magach_3_(USA)", # Name Parsing USA, Pack Premium
         # "Maus", # Multi Cannon
+        # "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
         # "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
-        # "Type_62_(USSR)", # Name Parsing USSR
+        # "Type_62_(USSR)", # NAme Parsing USSR
         # "Sho't_Kal_Dalet_(Great_Britain)", # Name Parsing GB
         # "M47_(Japan)", # Name Parsing JP, Rangefinder
         # "PT-76_(China)", # Name Parsing Taiwan
         # "ItO_90M_(France)", # Name Parsing France
         # "Bkan_1C", # Reverse Gearbox
-        "AMX-10RC", # Suspension
+        # "AMX-10RC", # Suspension
         # "Object_685", # Amphibious, Autoloader
         # "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
         # "Centauro_I_105", # LWS, Thermals
@@ -372,6 +445,13 @@ def __main__():
         # "ZSU-23-4", # Radar in Wiki
         # "SIDAM_25", # Optotronics
         # "VEAK_40", # Radar not in Wiki
+        # "AMX-30B2_BRENUS", # passive APS
+        # "Black_Night", # Active APS
+        # "M113A1_(TOW)", # fire on the move 5km/h
+        # "Strv_81_(RB_52)", # tank with missel launcher
+        # "M901", # lowes fire while moving speed found (1km/h)
+        # "M60A1_\"D.C.Ariete\"", # GE Premium
+        # "AUBL/74_HVG" # Marketplace Vehicle
     ]
     for vehicle in test_vehicles:
         test_tank_file_name = f"Test_Vehicles\\{vehicle}.html"
