@@ -8,7 +8,7 @@ _type_
 """
 
 # import DB
-from typing import Dict
+from typing import Dict, List
 import requests
 from bs4 import BeautifulSoup, SoupStrainer, Tag
 
@@ -125,6 +125,19 @@ def get_vehicle_specs(vehicle_url: str): # WIP
         return None
 
 
+def get_wiki_changelog() -> List:
+    changelog_url = f""
+    return parse_changelog(content=requests.get(changelog_url).text)
+
+def check_local_vehicles(vehiles: List[str]) -> bool:
+    pass
+
+def parse_changelog(content: str) -> List:
+    pass
+
+
+
+
 def __main__():
     """Main
     """
@@ -133,7 +146,7 @@ def __main__():
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
     test_vehicles = [
         "AML-90_(Israel)", # Name parsing Israeal
-        "Magach_3_(USA)", # Name Parsing USA
+        "Magach_3_(USA)", # Name Parsing USA, Pack Premium
         "Maus", # Multi Cannon
         "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
         "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
@@ -156,7 +169,9 @@ def __main__():
         "Black_Night", # Active APS
         "M113A1_(TOW)", # fire on the move 5km/h
         "Strv_81_(RB_52)", # tank with missel launcher
-        "M901" # lowes fire while moving speed found (1km/h)
+        "M901", # lowes fire while moving speed found (1km/h)
+        "M60A1_\"D.C.Ariete\"", # GE Premium
+        "AUBL/74_HVG" # Marketplace Vehicle
     ]
     for vehicle in test_vehicles:
         get_vehicle_specs(f"https://wiki.warthunder.com/{vehicle}")
