@@ -6,6 +6,8 @@ from armament import Armament
 from typing import Dict, Tuple, List
 
 class VehicleClass(Enum):
+    """ an enum that represents a vehicles designation
+    """
     DEFAULT = 1
     LIGHT = 2
     MEDIUM = 3
@@ -35,8 +37,6 @@ class Tank():
         self.armaments: List[Armament] = []
         self.cost: int = -1
         self.research: int = -1
-        self.cost_usd: int = -1
-        self.cost_ge: int = -1
         self.repair_cost_stock: Dict[str, int] = {"Arcade": -1, "Realistic": -1, "Simulator": -1}
         self.repair_cost_upgraded: Dict[str, int] = {"Arcade": -1, "Realistic": -1, "Simulator": -1}
         self.total_cost_modifications_sl: int = -1
