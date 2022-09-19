@@ -136,7 +136,7 @@ def get_vehicle_specs(vehicle: str): # WIP
         vec.write(content)
 
     with open("naming.lst", "a", encoding="utf-8") as name:
-        name.write(f"{vehicle} -> {string_to_ordinal(vehicle)}.html\n")
+        name.write(f"{vehicle} -> {directory} -> {string_to_ordinal(vehicle)}.html\n")
 
 
 def get_wiki_changelog() -> List:
@@ -177,12 +177,12 @@ def __main__():
     #get_vehicles_by_nation(get_fleet_nations().pop("USA"))
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
     test_vehicles = [
-        "AML-90_(Israel)", # Name parsing Israeal
+        "AML-90_(Israel)", # Name Parsing Israeal
         "Magach_3_(USA)", # Name Parsing USA, Pack Premium
         "Maus", # Multi Cannon
         "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
-        "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
-        "Type_62_(USSR)", # NAme Parsing USSR
+        "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", Name Parsing Germany
+        "Type_62_(USSR)", # Name Parsing USSR
         "Sho't_Kal_Dalet_(Great_Britain)", # Name Parsing GB
         "M47_(Japan)", # Name Parsing JP, Rangefinder
         "PT-76_(China)", # Name Parsing Taiwan
@@ -201,7 +201,7 @@ def __main__():
         "Black_Night", # Active APS
         "M113A1_(TOW)", # fire on the move 5km/h
         "Strv_81_(RB_52)", # tank with missel launcher
-        "M901", # lowes fire while moving speed found (1km/h)
+        "M901", # lowest fire while moving speed found (1km/h)
         "M60A1_\"D.C.Ariete\"", # GE Premium
         "AUBL/74_HVG" # Marketplace Vehicle
     ]
