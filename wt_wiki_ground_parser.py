@@ -1,6 +1,7 @@
 """Parsing of Ground Vehicles using data provided by the WarThunder Wiki
 """
 
+import os
 from bs4 import BeautifulSoup, SoupStrainer, Tag
 from ammunition import Ammunition
 from armament import Armament, Stabilizer
@@ -8,6 +9,10 @@ from tanks import Tank, VehicleClass
 from typing import Dict, List
 from html_table_parser import HTMLTableParser
 
+if os.name == "nt":
+    SLASH = "\\"
+else:
+    SLASH = "/"
 
 def parse_ground_vehicle(response_content: str) -> Tank:
     """parses the wiki entry of a ground vehicle
@@ -291,7 +296,7 @@ def parse_vehicles_fetures(tank: Tank, soup: BeautifulSoup) -> None:
             tank.controlled_suspension = True
         elif "stabilizer" in feature or feature == "Autoloader" : # keep this here to catch all the funky stuff
             pass
-        elif feature in ["Smoke grenades", "ESS", "Laser rangefinder", "Night vision device", "Rangefinder", "Self-entrenching equipment"]: # we got those parsed already, so no need for warnings
+        elif feature in ["Smoke grenades", "ESS", "Laser rangefinder", "Night vision device", "Rangefinder", "Self-entrenching equipment", "LWS"]: # we got those parsed already, so no need for warnings
             pass
         else:
             print(f"Feature WARN: {feature}") # add logging here
@@ -330,8 +335,11 @@ def parse_vehicle_modification_features(tank: Tank, soup: BeautifulSoup) -> None
             tank.rangefinder = True
         elif mod.text.strip() == "LR" or "Laser rangefinder":
             tank.laser_rangefinder = True
-        elif mod.text.strip() == "LWS/LR":
+        elif mod.text.strip() == "LWS/LR" or "LWS":
             tank.laser_warning_rangefinder = True
+        # Drone Stuff
+        elif mod.text.stip() == "Scout UAV":
+            tank.scout_uav = True
 
 
 
@@ -545,39 +553,12 @@ def __main__():
     """Main-ly used for standalone testing during developemnt
     """
     content: str
-    test_vehicles = [
-        "AML-90_(Israel)", # Name parsing Israeal
-        "Magach_3_(USA)", # Name Parsing USA, Pack Premium
-        "Maus", # Multi Cannon
-        "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
-        "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
-        "Type_62_(USSR)", # NAme Parsing USSR
-        "Sho't_Kal_Dalet_(Great_Britain)", # Name Parsing GB
-        "M47_(Japan)", # Name Parsing JP, Rangefinder
-        "PT-76_(China)", # Name Parsing Taiwan
-        "ItO_90M_(France)", # Name Parsing France
-        "Bkan_1C", # Reverse Gearbox
-        "AMX-10RC", # Suspension
-        "Object_685", # Amphibious, Autoloader
-        "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
-        "Centauro_I_105", # LWS, Thermals
-        "ADATS_(M113)", # ATGM
-        "BMP-2M", # Squadron
-        "ZSU-23-4", # Radar in Wiki
-        "SIDAM_25", # Optotronics
-        "VEAK_40", # Radar not in Wiki
-        "AMX-30B2_BRENUS", # passive APS
-        "Black_Night", # Active APS
-        "M113A1_(TOW)", # fire on the move 5km/h
-        "Strv_81_(RB_52)", # tank with missel launcher
-        "M901", # lowes fire while moving speed found (1km/h)
-        # "M60A1_\"D.C.Ariete\"", # GE Premium
-        # "AUBL/74_HVG" # Marketplace Vehicle
-    ]
-    for vehicle in test_vehicles:
-        test_tank_file_name = f"Test_Vehicles\\{vehicle}.html"
+    for line in open("naming.lst", mode="r", encoding="utf-8"):
+        name, directory, filename = line.rstrip("\n").split(" -> ")
+        test_tank_file_name = f"{directory}{SLASH}{filename}"
         with open(test_tank_file_name, "r", encoding="utf-8") as data:
             content = data.read()
+        print(f"\n\nParsing: {name}")
         parse_ground_vehicle(response_content=content)
 
 if __name__ == "__main__":
