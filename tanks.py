@@ -72,6 +72,7 @@ class Tank():
         self.artillery: bool = False
         self.dozer_blade: bool = False
         self.scouting: bool = False
+        self.scout_uav: bool = False
         # Visuals
         self.night_vision: bool = False
         self.thermal_vision: bool = False
