@@ -8,10 +8,16 @@ _type_
 """
 
 # import DB
+import os
 from typing import Dict, List
 import requests
 from urllib.parse import quote
 from bs4 import BeautifulSoup, SoupStrainer, Tag
+
+if os.name == "nt":
+    SLASH = "\\"
+else:
+    SLASH = "/"
 
 BASE_URL = f"https://wiki.warthunder.com"
 
@@ -97,7 +103,7 @@ def get_vehicles_by_nation(nation_url: str) -> Dict[str, str]:
                 vehicle_list[list_entry.a.string] = f"{BASE_URL}{list_entry.a['href']}"
     return vehicle_list
 
-def get_vehicle_specs(vehicle_url: str): # WIP
+def get_vehicle_specs(vehicle: str): # WIP
     """Grabs specific vehicles from the wiki, passes them to the parser and (pushes them to the DB)
 
     Currently just saves the data to a html file for offline prosessing during developemnt.
@@ -112,18 +118,25 @@ def get_vehicle_specs(vehicle_url: str): # WIP
     _type_ [Vehicle]
         Model of the specified Vehicle
     """
+    vehicle_url = f"https://wiki.warthunder.com/{quote(vehicle)}"
     content = requests.get(vehicle_url).text
     soup = BeautifulSoup(content, "html.parser", parse_only=SoupStrainer(class_="mw-normal-catlinks"))
-    with open(f"Test_Vehicles\\{vehicle_url.split('/')[len(vehicle_url.split('/')) - 1]}.html", "w", encoding="utf-8") as vec:
-        vec.write(content)
+    directory = ""
     if "ground" in soup.ul.li.string.lower():
-        print("Earth")
+        directory = "Earth"
     elif "aviation" in soup.ul.li.string.lower():
-        print("Wind")
+        directory = "Wind"
     elif "fleet" in soup.ul.li.string.lower():
-        print("Not Fire!")
+        directory = "Not_Fire"
     else:
-        return None
+        directory = "Special"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    with open(f"{directory}{SLASH}{string_to_ordinal(vehicle)}.html", "w", encoding="utf-8") as vec:
+        vec.write(content)
+
+    with open("naming.lst", "a", encoding="utf-8") as name:
+        name.write(f"{vehicle} -> {string_to_ordinal(vehicle)}.html\n")
 
 
 def get_wiki_changelog() -> List:
@@ -144,15 +157,15 @@ def check_local_vehicles(vehiles: List[str]) -> bool:
 def parse_changelog(content: str) -> List:
     pass
 
-def string_to_ordenance(input_str: str) -> str:
+def string_to_ordinal(input_str: str, delimiter: str = "-") -> str:
     output_str: str = ""
     for char in input_str:
-        output_str = f"{output_str}{ord(char)},"
-    return output_str.rstrip(",")
+        output_str = f"{output_str}{ord(char)}{delimiter}"
+    return output_str.rstrip(delimiter)
 
-def ordenance_to_string(input_str: str) -> str:
+def ordinal_to_string(input_str: str, delimiter: str = "-") -> str:
     output_str: str = ""
-    for x in input_str.split(","):
+    for x in input_str.split(delimiter):
         output_str = f"{output_str}{chr(int(x))}"
     return output_str
 
@@ -164,39 +177,39 @@ def __main__():
     #get_vehicles_by_nation(get_fleet_nations().pop("USA"))
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
     test_vehicles = [
-        # "AML-90_(Israel)", # Name parsing Israeal
-        # "Magach_3_(USA)", # Name Parsing USA, Pack Premium
-        # "Maus", # Multi Cannon
-        # "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
-        # "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
-        # "Type_62_(USSR)", # NAme Parsing USSR
-        # "Sho't_Kal_Dalet_(Great_Britain)", # Name Parsing GB
-        # "M47_(Japan)", # Name Parsing JP, Rangefinder
-        # "PT-76_(China)", # Name Parsing Taiwan
-        # "ItO_90M_(France)", # Name Parsing France
-        # "Bkan_1C", # Reverse Gearbox
-        # "AMX-10RC", # Suspension
-        # "Object_685", # Amphibious, Autoloader
-        # "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
-        # "Centauro_I_105", # LWS, Thermals
-        # "ADATS_(M113)", # ATGM
-        # "BMP-2M", # Squadron
-        # "ZSU-23-4", # Radar in Wiki
-        # "SIDAM_25", # Optotronics
-        # "VEAK_40", # Radar not in Wiki
-        # "AMX-30B2_BRENUS", # passive APS
-        # "Black_Night", # Active APS
-        # "M113A1_(TOW)", # fire on the move 5km/h
-        # "Strv_81_(RB_52)", # tank with missel launcher
-        # "M901", # lowes fire while moving speed found (1km/h)
-        # "M60A1_\"D.C.Ariete\"", # GE Premium
-        # "AUBL/74_HVG" # Marketplace Vehicle
+        "AML-90_(Israel)", # Name parsing Israeal
+        "Magach_3_(USA)", # Name Parsing USA, Pack Premium
+        "Maus", # Multi Cannon
+        "M24_(Italy)", # Vertical Stabilizer, Name Parsing Italy
+        "Pz.Kpfw._Churchill_(Germany)", # "Shoulder Stabilizer", German Name Parsing
+        "Type_62_(USSR)", # NAme Parsing USSR
+        "Sho't_Kal_Dalet_(Great_Britain)", # Name Parsing GB
+        "M47_(Japan)", # Name Parsing JP, Rangefinder
+        "PT-76_(China)", # Name Parsing Taiwan
+        "ItO_90M_(France)", # Name Parsing France
+        "Bkan_1C", # Reverse Gearbox
+        "AMX-10RC", # Suspension
+        "Object_685", # Amphibious, Autoloader
+        "T-72AV_(TURMS-T)", # ERA, ESS, Dozer Blades
+        "Centauro_I_105", # LWS, Thermals
+        "ADATS_(M113)", # ATGM
+        "BMP-2M", # Squadron
+        "ZSU-23-4", # Radar in Wiki
+        "SIDAM_25", # Optotronics
+        "VEAK_40", # Radar not in Wiki
+        "AMX-30B2_BRENUS", # passive APS
+        "Black_Night", # Active APS
+        "M113A1_(TOW)", # fire on the move 5km/h
+        "Strv_81_(RB_52)", # tank with missel launcher
+        "M901", # lowes fire while moving speed found (1km/h)
+        "M60A1_\"D.C.Ariete\"", # GE Premium
+        "AUBL/74_HVG" # Marketplace Vehicle
     ]
     for vehicle in test_vehicles:
-        ord_str = string_to_ordenance(vehicle)
-        print("s2o", ord_str)
-        print("o2s", ordenance_to_string(ord_str))
-        #get_vehicle_specs(f"https://wiki.warthunder.com/{quote(vehicle)}")
+        #ord_str = string_to_ordinal(vehicle)
+        #print("s2o", ord_str)
+        #print("o2s", ordinal_to_string(ord_str))
+        get_vehicle_specs(vehicle=vehicle)
 
 
 if __name__ == "__main__":
