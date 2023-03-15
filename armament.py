@@ -5,8 +5,6 @@ from enum import Enum
 from ammunition import Ammunition
 from typing import List, Dict
 
-#class Stbilizer(Enum):
-
 class Stabilizer(Enum):
     """Enum Class that represents a Armament Stabilizer
     """

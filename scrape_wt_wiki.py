@@ -7,7 +7,15 @@ _type_
     Happiness
 """
 
+# TODO:
+# add argparse
+# check for changelog
+# get updates
+# get fresh data and ignore local files 
+
+
 # import DB
+from enum import Enum
 import os
 from typing import Dict, List
 import requests
@@ -18,6 +26,11 @@ if os.name == "nt":
     SLASH = "\\"
 else:
     SLASH = "/"
+
+class TerrainType(Enum):
+    GROUND = "Earth"
+    NAVAL = "Not_Fire"
+    AVIATION = "Air"
 
 BASE_URL = f"https://wiki.warthunder.com"
 
@@ -123,13 +136,14 @@ def get_vehicle_specs(vehicle: str): # WIP
     soup = BeautifulSoup(content, "html.parser", parse_only=SoupStrainer(class_="mw-normal-catlinks"))
     directory = ""
     if "ground" in soup.ul.li.string.lower():
-        directory = "Earth"
+        directory = TerrainType.GROUND
     elif "aviation" in soup.ul.li.string.lower():
-        directory = "Wind"
+        directory = TerrainType.AVIATION
     elif "fleet" in soup.ul.li.string.lower():
-        directory = "Not_Fire"
+        directory = TerrainType.NAVAL
     else:
-        directory = "Special"
+        #directory = "Special"
+        return # I'm still not quite sure if i want to add the special pages (bombs, rockets etc...)
     if not os.path.exists(directory):
         os.makedirs(directory)
     with open(f"{directory}{SLASH}{string_to_ordinal(vehicle)}.html", "w", encoding="utf-8") as vec:
@@ -140,22 +154,46 @@ def get_vehicle_specs(vehicle: str): # WIP
 
 
 def get_wiki_changelog() -> List:
-    # exclude following entries:
-    # starting with ()
-    # starting with User:
-    # starting with Template:
-    # starting with File:
-    # starting with Update
-    # containing (Family)
+    """grabs the changelog page and iterates through the changes
 
+    Returns
+    -------
+    List
+        list of changed pages from the wiki
+    """
+    # check on how we handle the date format and other url options
     changelog_url = f""
     return parse_changelog(content=requests.get(changelog_url).text)
 
-def check_local_vehicles(vehiles: List[str]) -> bool:
+def parse_changelog(content: str) -> List:
+    # exclude following entries:
+        # starting with ()
+        # starting with User:
+        # starting with Template:
+        # starting with File:
+        # starting with Update
+        # containing (Family)
     pass
 
-def parse_changelog(content: str) -> List:
-    pass
+def check_local_vehicle(vehicle: str) -> bool:
+    """checks if a vehicle is present in the local FS
+
+    Parameters
+    ----------
+    vehicle : str
+        name of the vehicle to check
+
+    Returns
+    -------
+    bool
+        vehicle is present or not
+    """
+    vehicle_ord = ordinal_to_string(vehicle)
+    for tType in TerrainType:
+        dir_content = os.listdir(tType.value)
+        if dir_content and f"{vehicle_ord}.html" in dir_content:
+            return True
+    return False
 
 def string_to_ordinal(input_str: str, delimiter: str = "-") -> str:
     output_str: str = ""
@@ -173,6 +211,13 @@ def ordinal_to_string(input_str: str, delimiter: str = "-") -> str:
 def __main__():
     """Main
     """
+
+    # argparsing here
+
+    # add strv 103A
+    # add VT1-2 Waffentraeger mit 2 cannons
+    
+
     #get_vehicles_by_nation(get_aviation_nations().pop("USA"))
     #get_vehicles_by_nation(get_fleet_nations().pop("USA"))
     #get_vehicles_by_nation(get_ground_nations().pop("USA"))
@@ -206,9 +251,6 @@ def __main__():
         "AUBL/74_HVG" # Marketplace Vehicle
     ]
     for vehicle in test_vehicles:
-        #ord_str = string_to_ordinal(vehicle)
-        #print("s2o", ord_str)
-        #print("o2s", ordinal_to_string(ord_str))
         get_vehicle_specs(vehicle=vehicle)
 
 

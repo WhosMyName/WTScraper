@@ -33,6 +33,7 @@ def parse_ground_vehicle(response_content: str) -> Tank:
     # Radar
     # APS ?
     # Composite armour
+    # Predator Drone ?
 
     soup = BeautifulSoup(response_content, "html.parser", parse_only=SoupStrainer(class_="mw-parser-output"))
 
